@@ -36,6 +36,9 @@ export function buildCardHtml(p, photo, siteUrl) {
 
   const statCell = (s) => `<div class="cell"><div class="big">${esc(s.value)}</div><div class="lbl">${esc(s.label)}</div></div>`;
   const bar = (s) => `<div class="row"><div class="rowtop"><span class="lbl">${esc(s.label)}</span><span class="val">${esc(s.value)}</span></div><div class="track"><i style="width:${pct(s).toFixed(1)}%"></i></div></div>`;
+  const teamBlock = (kicker, name, bits, cls) => !name ? "" :
+    '<div class="tb' + (cls ? " " + cls : "") + '">' + (kicker ? '<div class="lbl">' + esc(kicker) + "</div>" : "") +
+    '<div class="tn">' + esc(name) + '</div><div class="td">' + esc(bits.filter(Boolean).join(" · ")) + "</div></div>";
   const fact = (l, v) => `<div><div class="lbl">${esc(l)}</div><div class="fact">${esc(v)}</div></div>`;
 
   return `<!DOCTYPE html>
@@ -71,6 +74,19 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Archivo,system-u
  box-shadow:0 3px 10px rgba(45,43,43,.16);display:flex;flex-direction:column;overflow:hidden}
 .back{transform:rotateY(180deg)}
 .band{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;background:var(--ink);color:var(--bg)}
+.band2{display:grid;grid-template-columns:1fr 1fr;background:var(--ink);color:var(--bg)}
+.bcell{padding:8px 16px 10px;min-width:0}
+.bcell+.bcell{border-left:1px solid rgba(243,242,242,.32)}
+.bk{font-size:8px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;opacity:.7}
+.bn{font-weight:800;font-size:11px;line-height:1.2;letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+.bs{font-size:9px;letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-top:2px}
+.gh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;border-bottom:2px solid var(--ink);padding-bottom:5px;margin:0 0 12px}
+.gh b{font-weight:800;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.gh span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--n6)}
+.tb{padding-left:12px;border-left:2px solid var(--ink);margin-bottom:12px}
+.tb.club{border-left-color:var(--red)}
+.tb .tn{font-weight:800;font-size:14px;line-height:1.25;margin-top:2px}
+.tb .td{font-size:12px;color:var(--n7);margin-top:1px}
 .band b{font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .band span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.75;white-space:nowrap}
 .shot{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;background:var(--n3);cursor:pointer}
@@ -124,7 +140,10 @@ li{font-size:12.5px;padding-left:12px;border-left:2px solid var(--red)}
 <div class="stage">
   <div class="flipper" id="flipper">
     <div class="face">
-      <div class="band"><b>${esc(p.club)}</b><span>${esc(p.season)}</span></div>
+      <div class="band2">
+        <div class="bcell"><div class="bk">School</div><div class="bn">${esc(p.hsTeam)}</div><div class="bs">${esc(p.hsSeason)}</div></div>
+        <div class="bcell"><div class="bk">Club</div><div class="bn">${esc(p.clubTeam)}</div><div class="bs">${esc(p.clubSeason)}</div></div>
+      </div>
       <div class="shot" id="shot" role="button" tabindex="0" aria-label="Flip card">
         <img src="${photo}" alt="${esc(name)}">
         <div class="no">#${esc(p.number)}</div>
@@ -133,7 +152,7 @@ li{font-size:12.5px;padding-left:12px;border-left:2px solid var(--red)}
       <div class="name">
         <div class="f">${esc(p.first)}</div>
         <div class="l">${esc(p.last)}</div>
-        <div class="meta"><span>${esc(p.hs)}</span><span>/</span><span>Class of ${esc(p.gradYear)}</span><span>/</span><span>${esc(p.height)} · ${esc(p.weight)}</span></div>
+        <div class="meta"><span>Class of ${esc(p.gradYear)}</span><span>/</span><span>${esc(p.city)}</span><span>/</span><span>${esc(p.height)} · ${esc(p.weight)}</span></div>
       </div>
       <div class="strip">${stats.slice(0, 3).map(statCell).join("")}</div>
       <button class="flipbtn" type="button" data-flip>Bio · Stats · Film →</button>
@@ -150,19 +169,24 @@ li{font-size:12.5px;padding-left:12px;border-left:2px solid var(--red)}
         <div class="rule"></div>
         <div class="facts">${fact("Height", p.height)}${fact("Weight", p.weight)}${fact("Age", p.age)}${fact("Foot", p.foot)}${fact("GPA", p.gpa)}${fact("Hometown", p.city)}</div>
         <div class="rule"></div>
-        <div class="lbl">Teams</div>
-        <ul>${lines(p.teams).map((l) => "<li>" + esc(l.replace(/\s*\|\s*/, " — ")) + "</li>").join("")}</ul>
+        ${teamBlock("School", p.hsTeam, [p.hsRole, p.hsSeason])}
+        ${teamBlock("Club", p.clubTeam, [p.clubRole, p.clubSeason], "club")}
+        ${lines(p.otherTeams).map((l) => teamBlock("", l.split("|")[0], [(l.split("|")[1] || "")])).join("")}
+        <div class="rule"></div>
+        <div class="lbl">Awards</div>
+        <ul>${lines(p.awards).map((l) => "<li>" + esc(l) + "</li>").join("")}</ul>
       </div>
       <div class="pane" data-pane="stats" hidden>
-        ${stats.map(bar).join("")}
+        ${[["hs", "School", p.hsSeason], ["club", "Club", p.clubSeason]].map(function (g) {
+          var rows = stats.filter(function (st) { return (st.team || "hs") === g[0]; });
+          if (!rows.length) return "";
+          return '<div class="gh"><b>' + esc(g[1]) + "</b><span>" + esc(g[2]) + "</span></div>" + rows.map(bar).join("");
+        }).join("")}
         <div class="lbl">${esc(p.season)} · verified by coach</div>
       </div>
       <div class="pane" data-pane="film" hidden>
         ${film ? `<div class="frame"><iframe src="${esc(film)}" title="Highlights" allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>`
                : `<div class="empty">No highlight reel linked yet.</div>`}
-        <div class="rule"></div>
-        <div class="lbl">Awards</div>
-        <ul>${lines(p.awards).map((l) => "<li>" + esc(l) + "</li>").join("")}</ul>
       </div>
       <button class="flipbtn" type="button" data-flip>← Back to front</button>
     </div>
@@ -247,7 +271,7 @@ export async function buildPreviewPng(p, photo) {
   const L = photoW + 56;
   x.fillStyle = "#201e1d";
   x.font = "800 20px Archivo, sans-serif";
-  x.fillText(String(p.club || "").toUpperCase(), L, 96);
+  x.fillText([p.hsTeam, p.clubTeam].filter(Boolean).join("   ·   ").toUpperCase(), L, 96);
   x.fillStyle = "#7d7979";
   x.font = "600 18px Archivo, sans-serif";
   x.fillText(String(p.season || "").toUpperCase(), L, 126);
